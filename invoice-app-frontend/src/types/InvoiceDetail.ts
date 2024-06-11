@@ -1,5 +1,5 @@
 export interface InvoiceDetail {
-    id:number
+    id:number 
     item:string
     price:number
     amount:number

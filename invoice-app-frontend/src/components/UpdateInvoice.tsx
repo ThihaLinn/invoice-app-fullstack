@@ -6,16 +6,17 @@ import { deleteInvoice, editInvoice, getInvoice } from "../api/invoice";
 import { format } from "date-fns";
 import { changeString, invoiceSchema } from "../util/validation";
 
+
 const UpdateInvoice = () => {
   let currentDate = new Date();
 
   const navigate = useNavigate();
   const { invoiceId } = useParams();
-  console.log(Number(invoiceId));
 
   const [value, setValue] = useState<number>(1);
-
+  const [invoiceFromDb ,setInvoiceFromDb] = useState<Invoice>()
   let [invoice, setInvoice] = useState<Invoice>({
+    invoiceId:0,
     casherName: "",
     township: township[2],
     date: changeString(currentDate),
@@ -26,7 +27,8 @@ const UpdateInvoice = () => {
         item: "",
         price: 0,
         amount: 1,
-        totalAmount: 0,
+        totalAmount: 0
+ 
       },
     ],
   });
@@ -36,14 +38,14 @@ const UpdateInvoice = () => {
   useEffect(() => {
     const invoiceDatabase = getInvoice(Number(invoiceId)).then((res) => {
       setInvoice(res.data);
+      setInvoiceFromDb(res.data);
     });
     setInvoice({ ...invoice, township: invoice.township });
+ 
   }, []);
 
-  console.log(invoice.invoiceDetailDtos.map((a) => a.price));
 
   const add = () => {
-    console.log(invoice);
     //setDate([...data, { id: value + 1, item: "", price: 0, amount: 1, totalAmount: 0 }])
     setValue(value + 1);
     setInvoice({
@@ -54,28 +56,28 @@ const UpdateInvoice = () => {
       ],
     });
 
-    console.log(invoice);
   };
+  const remove = (index: number | undefined) => {
 
-  const remove = (id: number | undefined) => {
-    console.log(id);
+    let details = invoice.invoiceDetailDtos.filter((_, i) => i !== index);
 
-    let details = invoice.invoiceDetailDtos.filter((ivd) => ivd.id !== id);
-
-    let rDetail = invoice.invoiceDetailDtos.find((ivd) => ivd.id == id);
+    //let rDetail = invoice.invoiceDetailDtos.find(ivd => ivd.id === id)
 
     setInvoice({ ...invoice, invoiceDetailDtos: details });
   };
 
+
   const changeItem = (item: string, id: number | undefined) => {
-    console.log(item, id);
     const result = invoice.invoiceDetailDtos.find(
       (data) => data.id === id
     ) as InvoiceDetail;
     result.item = item;
 
-    console.log(result);
-    console.log(invoice.invoiceDetailDtos);
+    const newInvoiceDetail = invoice.invoiceDetailDtos.map((idd) =>
+      idd.id === result.id ? result : idd
+    );
+    setInvoice({ ...invoice, invoiceDetailDtos: newInvoiceDetail });
+
   };
 
   const changePrice = (price: number, id: number | undefined) => {
@@ -101,7 +103,6 @@ const UpdateInvoice = () => {
     );
     setInvoice({ ...invoice, invoiceDetailDtos: final });
   };
-  console.log(invoice);
 
   const changeDate = (dateString: string) => {
     const dateParts = dateString.split("-"); // Split the string into year, month, and day parts
@@ -133,77 +134,107 @@ const UpdateInvoice = () => {
   const updateInvoice = () => {
     validate(invoice);
     const result = invoiceSchema.safeParse(invoice);
+    
     if (result.success) {
       try {
         editInvoice(invoice);
         navigate("/");
-        window.location.reload();
+
       } catch (error) {
         console.log(error);
       }
     }
+    console.log(invoice)
   };
 
   const removeInvoice = (id: number) => {
     try {
       deleteInvoice(id);
       navigate("/");
-      window.location.reload();
     } catch (error) {
       console.log(error);
     }
   };
 
+  const total = () =>{
+
+    let value =0
+
+    const a = invoice.invoiceDetailDtos.map(detail => {
+      value+=detail.price*detail.amount
+    })
+
+    return value;
+  }
+
+  console.log(errors)
+
+
+
   return (
-    <div className="w-[85%] mx-auto mt-10 border-2  border-gray-400 rounded-lg p-3 mb-3">
-      <form action="">
-        <div>
-          <header className="font-semibold">INVOICE</header>
-          <div className="border-2 border-gray-400 rounded-lg p-5 mt-3">
-            <div className="grid grid-cols-3 gap-16">
-              <div className="flex justify-around items-center">
+    <div className="w-[80%] mx-auto mt-3 md:px-10 px-5  mb-1">
+    <form action="">
+      <div>
+        <fieldset className="border-2 border-gray-400 rounded-sm md:px-2 pb-3 ">
+          <legend className="font-semibold ms-4 px-3 ">
+            Invoice
+          </legend>
+
+          <div className="grid xl:grid-cols-3 md:grid-cols-2  xl:gap-10 md:gap-5  h-fit  w-[100%] ">
+            <div className="flex flex-col justify-evenly  h-24">
+              <div className="w-[80%] mx-auto flex flex-col justify-evenly h-28 relative sm-mb-5 md:mb-0 sm:mb-0">
                 <div>Casher Name</div>
                 <input
+                value={invoice.casherName}
                   onChange={(event) => {
-                    setInvoice({ ...invoice, casherName: event.target.value });
+                    setInvoice({
+                      ...invoice,
+                      casherName: event.target.value,
+                    });
                     console.log(invoice);
                   }}
                   min={1}
-                  value={invoice.casherName}
-                  className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-24"
+                  className=" focus:border-none  focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-[100%]    "
                   placeholder="casher number"
                 />
                 {errors["casherName"] && (
-                  <small className="error block text-red-600">
+                  <small className="error block text-red-600 absolute sm:-bottom-2 -bottom-3">
                     {errors["casherName"]}
                   </small>
                 )}
               </div>
-              <div className="flex justify-around items-center">
+            </div>
+            <div className="flex flex-col justify-evenly  h-24">
+              <div className="w-[80%] mx-auto flex flex-col justify-evenly h-20">
                 <div>Date</div>
                 <input
                   required
                   value={invoice.date}
                   onChange={(event) => {
-                    setInvoice({ ...invoice, date: event.target.value });
+                    setInvoice({
+                      ...invoice,
+                      date: event.target.value,
+                    });
                     console.log(event.target.value);
                   }}
                   type="date"
-                  className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400  focus:outline-gray-400 outline-1"
+                  className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400  focus:outline-gray-400 outline-1 w-[100%] "
                   placeholder=""
                 />
               </div>
-              <div className="flex justify-around items-center">
+            </div>
+            <div className="flex flex-col justify-evenly  h-24">
+              <div className="w-[80%] mx-auto flex flex-col justify-evenly h-20">
                 <label htmlFor="twonship">Township</label>
                 <select
-                  value={invoice.township}
                   onChange={(event) => {
                     setInvoice({ ...invoice, township: event.target.value });
                     console.log(event.target.value);
                   }}
+                  value={invoice.township}
                   name="township"
                   id=""
-                  className="focus:border-none focus:ring-0 py-2 px-3  ring-1 ring-gray-400  focus:outline-gray-400 outline-1"
+                  className="focus:border-none focus:ring-0 py-2 px-3  ring-1 ring-gray-400  focus:outline-gray-400 outline-1 w-[100%] "
                 >
                   {township.map((township) => {
                     return (
@@ -215,187 +246,208 @@ const UpdateInvoice = () => {
                 </select>
               </div>
             </div>
-            <div className="ps-7 mt-7 ">
-              <div className="mb-5">
-                <label htmlFor="">Remark</label>
-              </div>
-              <textarea
-                defaultValue={invoice.remark as string}
-                onChange={(event) => {
-                  setInvoice({ ...invoice, remark: event.target.value });
-                  console.log(event.target.value);
-                }}
-                name=""
-                id=""
-                rows={4}
-                className="focus:border-none focus:ring-0 py-2 px-3  ring-1 ring-gray-400  focus:outline-gray-400 outline-1 w-full"
-              ></textarea>
-            </div>
           </div>
-          <div className="mt-5">
-            <header className="font-semibold">INVOICE DETAILS</header>
-            <div className="border-2 border-gray-400 rounded-lg p-5 mt-3">
-              <div>
-                <table className="min-w-full divide-y divide-gray-200 mt-5">
-                  <thead>
-                    <tr>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
+          <div className=" mt-3 lg:w-[90%] w-[80%] md:w-[90%] xl:w-[94%]   mx-auto">
+            <div className="mb-2">
+              <label htmlFor="">Remark</label>
+            </div>
+            <textarea
+              value={invoice.remark}
+              onChange={(event) => {
+                setInvoice({ ...invoice, remark: event.target.value });
+                console.log(event.target.value);
+              }}
+              name=""
+              id=""
+              rows={2}
+              className="focus:border-none focus:ring-0 py-2 px-3  ring-1 ring-gray-400  focus:outline-gray-400 outline-1 w-[100%]"
+            ></textarea>
+          </div>
+        </fieldset>
+        <div className="mt-5">
+          <fieldset className="border-2 border-gray-400 rounded-sm lg:p-5">
+          <legend className="font-semibold  px-3 ">Invoice Details</legend>
+            <div className="overflow-x-auto shadows">
+              <table className="min-w-full divide-y divide-gray-200 ">
+                <thead>
+                  <tr>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-center text-sm font-medium text-gray-500 uppercase"
+                    >
+                      ID
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Item
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Price
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Quantity
+                    </th>
+                    <th
+                      scope="col"
+                      className=" text-center text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Total Amount
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
+                    >
+                      <button
+                        onClick={() => add()}
+                        type="button"
+                        className="text-green-700 hover:text-white border border-green-700 hover:bg-green-800 focus:ring-0 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2 dark:border-green-500 dark:text-green-500 dark:hover:text-white dark:hover:bg-green-600 dark:focus:ring-green-800"
                       >
-                        ID
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
-                      >
-                        Item
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
-                      >
-                        Price
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
-                      >
-                        Quantity
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
-                      >
-                        Total Amount
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
-                      >
-                        Action
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
-                      >
-                        Action
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {invoice.invoiceDetailDtos.map((invoiceDetail, index) => (
-                      <tr key={index}>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-800">
-                          <div>{index + 1}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800 relative">
+                        +++ADD
+                      </button>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {invoice.invoiceDetailDtos.map((invoiceDetail, index) => (
+                    <tr key={index} className="align-middle">
+                      <td className="md:px-6 md:py-4  whitespace-nowrap text-center text-sm font-medium text-gray-800">
+                        <div>{index + 1}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800 relative ">
+                        <input
+                          value={invoiceDetail.item}
+                          onChange={(event) => {
+                            console.log(event.target.value);
+                            changeItem(event.target.value, invoiceDetail.id);
+                          }}
+                          required
+                          type="text"
+                          className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-24 "
+                        />
+                        {errors[`invoiceDetailDtos.${index}.item`] && (
+                          <small className="error block text-red-600  absolute bottom-0 left-0 right-0">
+                            {errors[`invoiceDetailDtos.${index}.item`]}
+                          </small>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800 relative">
+                        <div>
                           <input
-                            defaultValue={invoiceDetail.item}
                             onChange={(event) => {
                               console.log(event.target.value);
-                              changeItem(event.target.value, invoiceDetail.id);
-                            }}
-                            required
-                            type="text"
-                            className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-24"
-                          />
-                          {errors[`invoiceDetailDtos.${index}.item`] && (
-                            <small className="error block text-red-600  absolute bottom-0">
-                              {errors[`invoiceDetailDtos.${index}.item`]}
-                            </small>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-gray-800 relative">
-                          <input
-                            value={invoiceDetail.price}
-                            onChange={(event) => {
                               changePrice(
                                 Number(event.target.value),
                                 invoiceDetail.id
                               );
                             }}
-                            min={1}
+                            min={0}
+                            value={invoiceDetail.price}
                             required
                             type="number"
                             className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-24"
                           />
                           {errors[`invoiceDetailDtos.${index}.price`] && (
-                            <small className="error block text-red-600  absolute bottom-0 ">
+                            <small className="error block text-red-600 text-sm  absolute bottom-0 left-0 right-0">
                               {errors[`invoiceDetailDtos.${index}.price`]}
                             </small>
                           )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-gray-800">
-                          <input
-                            onChange={(event) => {
-                              changeQuantity(
-                                Number(event.target.value),
-                                invoiceDetail.id
-                              );
-                            }}
-                            min={1}
-                            value={invoiceDetail.amount}
-                            required
-                            type="number"
-                            className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-24"
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-gray-800">
-                          <div>{invoiceDetail.totalAmount}</div>
-                        </td>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-gray-800">
+                        <input
+                          onChange={(event) => {
+                            console.log(event.target.value);
+                            changeQuantity(
+                              Number(event.target.value),
+                              invoiceDetail.id
+                            );
+                          }}
+                          min={1}
+                          value={invoiceDetail.amount}
+                          required
+                          type="number"
+                          className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-[65px]"
+                        />
+                        {errors[`invoiceDetailDtos.${index}.amount`] && (
+                          <div className="error">
+                            {errors[`invoiceDetailDtos.${index}.amount`]}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-gray-800  ">
+                        <div className="">
+                          {invoiceDetail.price * invoiceDetail.amount}
+                        </div>
+                        {errors[`invoiceDetailDtos.${index}.amount`] && (
+                          <small className="error">
+                            {errors[`invoiceDetailDtos.${index}.amount`]}
+                          </small>
+                        )}
+                      </td>
+
+                      {invoice.invoiceDetailDtos.length !== 1 && (
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800">
                           <button
-                            onClick={() => add()}
+                            onClick={() => remove(index)}
                             type="button"
-                            className="text-green-700 hover:text-white border border-green-700 hover:bg-green-800 focus:ring-0 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-green-500 dark:text-green-500 dark:hover:text-white dark:hover:bg-green-600 dark:focus:ring-green-800"
+                            className="focus:ring-0 text-red-700 hover:text-white border border-red-700 hover:bg-red-800  focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900"
                           >
-                            ADD
+                            Remove
                           </button>
                         </td>
-                        {invoice.invoiceDetailDtos.length !== 1 && (
-                          <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800">
-                            <button
-                              onClick={() => remove(invoiceDetail.id)}
-                              type="button"
-                              className="focus:ring-0 text-red-700 hover:text-white border border-red-700 hover:bg-red-800  focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900"
-                            >
-                              Remove
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td className="font-semibold">Total Amount</td>
+                    <td className="text-center">{total()}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
-          </div>
-          <div className="flex justify-around items-center mt-5">
-            <button
-              onClick={() => updateInvoice()}
-              type="button"
-              className="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
-            >
-              Update
-            </button>
-            <button
-              onClick={() => removeInvoice(Number(invoiceId))}
-              type="button"
-              className="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900"
-            >
-              Delete
-            </button>
-            <button
-              type="button"
-              className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
-            >
-          <Link to={"/"}>Invoice List</Link>
-          </button>
-          </div>
+          </fieldset>
         </div>
-      </form>
-    </div>
+        <div className="flex justify-end items-center mt-5">
+          <button
+            onClick={() => updateInvoice()}
+            type="button"
+            className="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+          >
+            Save
+          </button>
+
+          <button
+          onClick={()=>removeInvoice(Number(invoice.invoiceId))}
+            type="button"
+            className="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900"
+          >
+           Delete
+          </button>
+
+          <button
+            type="button"
+            className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+          >
+            <Link to={"/"}>Invoice List</Link>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
   );
 };
 

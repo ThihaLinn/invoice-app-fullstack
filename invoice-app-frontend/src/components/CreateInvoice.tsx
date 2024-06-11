@@ -15,6 +15,7 @@ const CreateInvoice = () => {
   const [totalAmount, setTotalAmount] = useState<number[]>();
 
   let [invoice, setInvoice] = useState<Invoice>({
+    invoiceId: 0,
     casherName: "",
     township: township[2],
     date: changeString(currentDate),
@@ -76,6 +77,11 @@ const CreateInvoice = () => {
     ) as InvoiceDetail;
     result.item = item;
 
+    const newInvoiceDetail = invoice.invoiceDetailDtos.map((idd) =>
+      idd.id === result.id ? result : idd
+    );
+    setInvoice({ ...invoice, invoiceDetailDtos: newInvoiceDetail });
+
     console.log(result);
     console.log(invoice);
   };
@@ -117,98 +123,121 @@ const CreateInvoice = () => {
     }
   };
 
+   const total = () =>{
+
+    let value =0
+
+    const a = invoice.invoiceDetailDtos.map(detail => {
+      value+=detail.price*detail.amount
+    })
+
+    return value;
+  }
+
   console.log(errors);
 
   return (
-    <div className="w-[85%] mx-auto mt-10 border-2  border-gray-400 rounded-lg px-10 py-5 mb-3">
+    <div className="w-[80%] mx-auto mt-3 md:px-10 px-5  mb-1">
       <form action="">
         <div>
-          <header className="font-semibold">INVOICE</header>
-          <div className="border-2 border-gray-400 rounded-sm px-10 py-5 mt-3">
-            <div className="grid grid-cols-3 gap-16 h-fit">
-              <div className="grid grid-col-3 gap-1 h-10 ">
-                <div>Casher Number</div>
-                <input
-                  onChange={(event) => {
-                    setInvoice({
-                      ...invoice,
-                      casherName: event.target.value,
-                    });
-                    console.log(invoice);
-                  }}
-                  min={1}
-                  className=" focus:border-none  focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 "
-                  placeholder="casher number"
-                />
-                {errors["casherName"] && (
-                  <small className="error block text-red-600">{errors["casherName"]}</small>
-                )}
+          <fieldset className="border-2 border-gray-400 rounded-sm md:px-2 pb-3 ">
+            <legend className="font-semibold ms-4  px-3">
+               Invoice
+            </legend>
+
+            <div className="grid xl:grid-cols-3 md:grid-cols-2  xl:gap-10 md:gap-5  h-fit  w-[100%] ">
+              <div className="flex flex-col justify-evenly  h-24">
+                <div className="w-[80%] mx-auto flex flex-col justify-evenly h-28 relative sm-mb-5 md:mb-0 sm:mb-0">
+                  <div>Casher Name</div>
+                  <input
+                    onChange={(event) => {
+                      setInvoice({
+                        ...invoice,
+                        casherName: event.target.value,
+                      });
+                      console.log(invoice);
+                    }}
+                    min={1}
+                    className=" focus:border-none  focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-[100%]    "
+                    placeholder="casher number"
+                  />
+                  {errors["casherName"] && (
+                    <small className="error block text-red-600 absolute sm:-bottom-2 -bottom-3">
+                      {errors["casherName"]}
+                    </small>
+                  )}
+                </div>
               </div>
-              <div className="grid grid-col-3 gap-1">
-                <div>Date</div>
-                <input
-                  required
-                  value={invoice.date}
-                  onChange={(event) => {
-                    setInvoice({
-                      ...invoice,
-                      date: event.target.value,
-                    });
-                    console.log(event.target.value);
-                  }}
-                  type="date"
-                  className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400  focus:outline-gray-400 outline-1"
-                  placeholder=""
-                />
+              <div className="flex flex-col justify-evenly  h-24">
+                <div className="w-[80%] mx-auto flex flex-col justify-evenly h-20">
+                  <div>Date</div>
+                  <input
+                    required
+                    value={invoice.date}
+                    onChange={(event) => {
+                      setInvoice({
+                        ...invoice,
+                        date: event.target.value,
+                      });
+                      console.log(event.target.value);
+                    }}
+                    type="date"
+                    className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400  focus:outline-gray-400 outline-1 w-[100%] "
+                    placeholder=""
+                  />
+                </div>
               </div>
-              <div className="grid grid-col-3 gap-1">
-                <label htmlFor="twonship">Township</label>
-                <select
-                  onChange={(event) => {
-                    setInvoice({ ...invoice, township: event.target.value });
-                    console.log(event.target.value);
-                  }}
-                  value={invoice.township}
-                  name="township"
-                  id=""
-                  className="focus:border-none focus:ring-0 py-2 px-3  ring-1 ring-gray-400  focus:outline-gray-400 outline-1"
-                >
-                  {township.map((township) => {
-                    return (
-                      <>
-                        <option value={township}>{township}</option>
-                      </>
-                    );
-                  })}
-                </select>
+              <div className="flex flex-col justify-evenly  h-24">
+                <div className="w-[80%] mx-auto flex flex-col justify-evenly h-20">
+                  <label htmlFor="twonship">Township</label>
+                  <select
+                    onChange={(event) => {
+                      setInvoice({ ...invoice, township: event.target.value });
+                      console.log(event.target.value);
+                    }}
+                    value={invoice.township}
+                    name="township"
+                    id=""
+                    className="focus:border-none focus:ring-0 py-2 px-3  ring-1 ring-gray-400  focus:outline-gray-400 outline-1 w-[100%] "
+                  >
+                    {township.map((township) => {
+                      return (
+                        <>
+                          <option value={township}>{township}</option>
+                        </>
+                      );
+                    })}
+                  </select>
+                </div>
               </div>
             </div>
-            <div className=" mt-7 ">
-              <div className="mb-5">
+            <div className=" mt-3 lg:w-[90%] w-[80%] md:w-[90%] xl:w-[94%]   mx-auto">
+              <div className="mb-2">
                 <label htmlFor="">Remark</label>
               </div>
               <textarea
+                value={invoice.remark}
                 onChange={(event) => {
                   setInvoice({ ...invoice, remark: event.target.value });
                   console.log(event.target.value);
                 }}
                 name=""
                 id=""
-                rows={3}
+                rows={2}
                 className="focus:border-none focus:ring-0 py-2 px-3  ring-1 ring-gray-400  focus:outline-gray-400 outline-1 w-[100%]"
               ></textarea>
             </div>
-          </div>
+          </fieldset>
           <div className="mt-5">
-            <header className="font-semibold">INVOICE DETAILS</header>
-            <div className="border-2 border-gray-400 rounded-sm p-5 mt-3">
-              <div>
-                <table className="min-w-full divide-y divide-gray-200 mt-5">
+            <fieldset className="border-2 border-gray-400 rounded-sm lg:p-5">
+            <legend className="font-semibold  px-3">Invoice Details</legend>
+              <div className="overflow-x-auto shadows">
+                <table className="min-w-full divide-y divide-gray-200 ">
                   <thead>
                     <tr>
                       <th
                         scope="col"
-                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
+                        className="px-6 py-3 text-center text-sm font-medium text-gray-500 uppercase"
                       >
                         ID
                       </th>
@@ -232,7 +261,7 @@ const CreateInvoice = () => {
                       </th>
                       <th
                         scope="col"
-                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
+                        className=" text-center text-xs font-medium text-gray-500 uppercase"
                       >
                         Total Amount
                       </th>
@@ -240,39 +269,40 @@ const CreateInvoice = () => {
                         scope="col"
                         className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
                       >
-                        Action
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
-                      >
-                        Action
+                        <button
+                          onClick={() => add()}
+                          type="button"
+                          className="text-green-700 hover:text-white border border-green-700 hover:bg-green-800 focus:ring-0 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2 dark:border-green-500 dark:text-green-500 dark:hover:text-white dark:hover:bg-green-600 dark:focus:ring-green-800"
+                        >
+                          +++ADD
+                        </button>
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {invoice.invoiceDetailDtos.map((invoiceDetail, index) => (
                       <tr key={index} className="align-middle">
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-800">
+                        <td className="md:px-6 md:py-4  whitespace-nowrap text-center text-sm font-medium text-gray-800">
                           <div>{index + 1}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800 relative">
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800 relative ">
                           <input
+                            value={invoiceDetail.item}
                             onChange={(event) => {
                               console.log(event.target.value);
                               changeItem(event.target.value, invoiceDetail.id);
                             }}
                             required
                             type="text"
-                            className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-24"
+                            className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-24 "
                           />
                           {errors[`invoiceDetailDtos.${index}.item`] && (
-                            <small className="error block text-red-600  absolute bottom-0">
+                            <small className="error block text-red-600  absolute bottom-0 left-0 right-0">
                               {errors[`invoiceDetailDtos.${index}.item`]}
                             </small>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-gray-800 relative">
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800 relative">
                           <div>
                             <input
                               onChange={(event) => {
@@ -287,9 +317,9 @@ const CreateInvoice = () => {
                               required
                               type="number"
                               className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-24"
-                            />{" "}
+                            />
                             {errors[`invoiceDetailDtos.${index}.price`] && (
-                              <small className="error block text-red-600  absolute bottom-0 ">
+                              <small className="error block text-red-600 text-sm  absolute bottom-0 left-0 right-0">
                                 {errors[`invoiceDetailDtos.${index}.price`]}
                               </small>
                             )}
@@ -308,7 +338,7 @@ const CreateInvoice = () => {
                             value={invoiceDetail.amount}
                             required
                             type="number"
-                            className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-24"
+                            className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-[65px]"
                           />
                           {errors[`invoiceDetailDtos.${index}.amount`] && (
                             <div className="error">
@@ -316,23 +346,17 @@ const CreateInvoice = () => {
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-gray-800">
-                          <div>{invoiceDetail.totalAmount}</div>
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-gray-800  ">
+                          <div className="">
+                            {invoiceDetail.price * invoiceDetail.amount}
+                          </div>
                           {errors[`invoiceDetailDtos.${index}.amount`] && (
                             <small className="error">
                               {errors[`invoiceDetailDtos.${index}.amount`]}
                             </small>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800">
-                          <button
-                            onClick={() => add()}
-                            type="button"
-                            className="text-green-700 hover:text-white border border-green-700 hover:bg-green-800 focus:ring-0 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-green-500 dark:text-green-500 dark:hover:text-white dark:hover:bg-green-600 dark:focus:ring-green-800"
-                          >
-                            ADD
-                          </button>
-                        </td>
+
                         {invoice.invoiceDetailDtos.length !== 1 && (
                           <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800">
                             <button
@@ -347,11 +371,21 @@ const CreateInvoice = () => {
                       </tr>
                     ))}
                   </tbody>
+                  <tfoot>
+                    <tr>
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td className="font-semibold">Total Amount</td>
+                      <td className="text-center">{total()}</td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
-            </div>
+            </fieldset>
           </div>
-          <div className="flex justify-around items-center mt-5">
+          <div className="flex justify-end items-center mt-5">
             <button
               onClick={() => saveInvoice()}
               type="button"
@@ -359,13 +393,13 @@ const CreateInvoice = () => {
             >
               Save
             </button>
-            
+
             <button
               type="button"
               className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
             >
-          <Link to={"/"}>Invoice List</Link>
-          </button>
+              <Link to={"/"}>Invoice List</Link>
+            </button>
           </div>
         </div>
       </form>

@@ -1,13 +1,20 @@
 import { InvoiceDetail } from "./InvoiceDetail"
 
 export interface Invoice  {
-    invoiceId?:number
+    invoiceId:number
     casherName:string
     township:string
     date:string
     remark:string
     invoiceDetailDtos:Array<InvoiceDetail>
 }
+
+
+
+export interface TruncateProps {
+    text: string;
+    maxLength: number;
+  }
 
 export const township: string[] = [
     "AHLONE", "BAHAN", "DAGON", "DAGON_SEIKKAN", "DAWBON", "DALA", "EAST_DAGON",

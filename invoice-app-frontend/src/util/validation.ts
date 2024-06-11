@@ -1,6 +1,7 @@
 // validationSchema.ts
 import { formatDate } from 'date-fns';
 import { z } from 'zod';
+import { downloadExcel} from "../api/invoice";
 
 export const invoiceDetailSchema = z.object({
   id: z.number(),
@@ -31,11 +32,31 @@ export const changeDate = (dateString: string) => {
 
 
 export const changeString = (date: Date) => {
-    const dateString = formatDate(date, 'yyyy-MM-dd');
+    const dateString = formatDate(date, 'dd/yyy/MM');
 
     return dateString;
   }
 
+ export function formatDateString(dateString:string) {
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  }
+
+ export const generateExcel = async (invoices:any) => {
+
+    try {
+      const response = await downloadExcel(invoices)
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'invoices.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a); // Clean up
+    } catch (error) {
+      console.error('Error generating Excel:', error);
+    }
+  }
 
 export type Invoice = z.infer<typeof invoiceSchema>;
 export type InvoiceDetail = z.infer<typeof invoiceDetailSchema>;
