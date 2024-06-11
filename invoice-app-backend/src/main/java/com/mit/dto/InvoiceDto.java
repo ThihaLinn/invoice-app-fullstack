@@ -13,7 +13,7 @@ public record InvoiceDto(
 		 String remark
 		) {
 	
-	public Invoice toEntity(InvoiceDto invoiceDto) {
+	public static Invoice toEntity(InvoiceDto invoiceDto) {
 		return new Invoice(invoiceDto.casherName,invoiceDto.date(),invoiceDto.township,invoiceDto.remark);
 	}
 

@@ -17,11 +17,13 @@ import jakarta.persistence.OneToMany;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
+@ToString
 public class Invoice {
 	
 	@Id
@@ -33,12 +35,13 @@ public class Invoice {
 	public Township township;
 	public String remark;
 	
-	@OneToMany(mappedBy = "invoice",cascade = CascadeType.ALL,orphanRemoval = true)
+	@OneToMany(mappedBy = "invoice",cascade = CascadeType.ALL)
 	public List<InvoiceDetail> invoiceDetails = new ArrayList<InvoiceDetail>();
 
-	public void addInvoiceDetail(InvoiceDetail invoiceDetail) {
+	public InvoiceDetail addInvoiceDetail(InvoiceDetail invoiceDetail) {
 		invoiceDetail.setInvoice(this);
 		invoiceDetails.add(invoiceDetail);
+		return invoiceDetail;
 	}
 	
 	

@@ -8,13 +8,12 @@ import jakarta.persistence.ManyToOne;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
-@ToString
+
 public class InvoiceDetail {
 	
 	@Id
@@ -25,7 +24,7 @@ public class InvoiceDetail {
 	public Integer amount;
 	public Integer totalAmount;
 	
-	@ManyToOne
+	@ManyToOne()
 	public Invoice invoice;
 
 	public InvoiceDetail(String item, Integer price, Integer amount, Integer totalAmount) {

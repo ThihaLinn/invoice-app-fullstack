@@ -24,7 +24,7 @@ public class InvoiceService implements InvoiceInf {
 
 	@Override
 	public List<InvoiceResponse> getAllInvoice() {
-		 var invoices = invoiceRepo.findAll();
+		 var invoices = invoiceRepo.findAllByOrderByInvoiceIdDesc();
 
         return invoices.stream().map(InvoiceResponse::toResponse).toList();
 	}
@@ -34,7 +34,7 @@ public class InvoiceService implements InvoiceInf {
 	public String createInvoice(InvoiceDto invoiceDto, List<InvoiceDetailDto> invoiceDetailDtos) {
 		var invoiceDetails = invoiceDetailService.createInvoiceDetail(invoiceDetailDtos);
 
-		var invoice = invoiceDto.toEntity(invoiceDto);
+		var invoice = InvoiceDto.toEntity(invoiceDto);
 		for (InvoiceDetail invoiceDetail : invoiceDetails) {
 			invoice.addInvoiceDetail(invoiceDetail);
 		}
@@ -45,17 +45,23 @@ public class InvoiceService implements InvoiceInf {
 	}
 
 
+
 	@Override
 	public String updateInvoice(Integer invoiceId,InvoiceDto invoiceDto, List<InvoiceDetailDto> invoiceDetailDtos) {
-		System.out.println(invoiceId+"\n"+invoiceDto+"\n"+invoiceDetailDtos);
-		var invoice = invoiceDto.toEntity(invoiceDto);
-		invoice.setInvoiceId(invoiceId);
-		invoiceRepo.save(invoice);
-		
-		 invoiceDetailDtos =invoiceDetailDtos.stream().map( item -> new InvoiceDetailDto(null, item.item(), item.price(), item.amount(), item.amount()*item.price())).toList();
 
-		invoiceDetailService.updateInvoiceDetail(invoiceId,invoiceDetailDtos);
+		var invoice = invoiceRepo.findById(invoiceId).get();
+		var toUpdateInvoice = InvoiceDto.toEntity(invoiceDto);
+		toUpdateInvoice.setInvoiceId(invoice.invoiceId);
+		invoiceRepo.save(toUpdateInvoice);
 		
+		var inDetailDtos = invoiceDetailService.changetoUnsave(invoiceId, invoiceDetailDtos);
+		
+//		System.out.println(invoiceDetailDtos);
+//		
+//		return "okok";
+		
+		invoiceDetailService.updateInvoiceDetail(invoiceId, inDetailDtos);
+	
 		return "Successfully updated invoice";
 	}
 	
