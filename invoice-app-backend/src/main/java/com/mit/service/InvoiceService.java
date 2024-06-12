@@ -1,5 +1,10 @@
 package com.mit.service;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -101,7 +106,23 @@ public class InvoiceService implements InvoiceInf {
         return invoiceRepo.findByInvoiceNameLikeAndCashierNumber(num,search).stream().map(InvoiceDto::toDto).toList();
 	}
 	
-	
+	 public boolean isNumeric(String str) {
+	        try {
+	            Double.parseDouble(str);
+	            return true;
+	        } catch (NumberFormatException e) {
+	            return false;
+	        }
+	    }
+	 
+	 public boolean isValidDateFormat(String dateStr) {
+	        try {
+	            LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+	            return true;
+	        } catch (DateTimeParseException e) {
+	            return false;
+	        }
+	    }
 	
 
 }

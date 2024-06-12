@@ -1,5 +1,4 @@
 // validationSchema.ts
-import { formatDate } from 'date-fns';
 import { z } from 'zod';
 import { downloadExcel} from "../api/invoice";
 
@@ -31,16 +30,27 @@ export const changeDate = (dateString: string) => {
   };
 
 
-export const changeString = (date: Date) => {
-    const dateString = formatDate(date, 'dd/yyy/MM');
 
-    return dateString;
-  }
+
+  export const getCurrentDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are zero-based, so add 1
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
  export function formatDateString(dateString:string) {
     const [year, month, day] = dateString.split('-');
-    return `${day}/${month}/${year}`;
+    return `${day}-${month}-${year}`;
   }
+
+  export const formatDate = (date:Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based, so add 1
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
  export const generateExcel = async (invoices:any) => {
 
@@ -53,11 +63,17 @@ export const changeString = (date: Date) => {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a); // Clean up
+
+      
     } catch (error) {
       console.error('Error generating Excel:', error);
     }
   }
 
+export const numberWithCommas = (x: number): string => {
+  if (x < 1000) return x.toString(); // No commas needed for numbers less than 1000
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+};
 export type Invoice = z.infer<typeof invoiceSchema>;
 export type InvoiceDetail = z.infer<typeof invoiceDetailSchema>;
 

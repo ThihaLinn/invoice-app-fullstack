@@ -1,11 +1,16 @@
 import React, { ChangeEvent, useEffect, useRef, useState } from "react";
-import { downloadExcel, getInvoiceList, searchInvoice } from "../api/invoice";
+import { downloadExcel, getInvoiceList, searchInvoice, vaildateExcel } from "../api/invoice";
 import { Invoice, TruncateProps } from "../types/Invoice";
 import { Link } from "react-router-dom";
 import { useDebouncedCallback } from "use-debounce";
 import { formatDateString, generateExcel } from "../util/validation";
 import { useDownloadExcel } from "react-export-table-to-excel";
 import * as XLSX from 'xlsx';
+import { json } from "stream/consumers";
+import { join } from "path";
+import { AxiosError } from "axios";
+import { useAppDispatch } from "../app/hook";
+import { setClose, setOpen } from "../app/slice/alertSlice";
 
 
 
@@ -17,13 +22,11 @@ const InvoiceList = () => {
   const endIndex = startIndex + itemsPerPage;
   const currentData = invoices.slice(startIndex, endIndex);
   const tableref = useRef(null)
+  const [jsonData,setJsonData] = useState<Invoice[]>();
+  const dispatch = useAppDispatch()
 
 
-  const {onDownload} = useDownloadExcel({
-    currentTableRef:tableref.current,
-    filename:'user_info',
-    sheet:"UserData"
-  })
+
 
 
   if (invoices.length == 0) {
@@ -36,7 +39,6 @@ const InvoiceList = () => {
   }, []);
 
   const handlePageChange = (page: React.SetStateAction<number>) => {
-    console.log(page);
     setCurrentPage(page);
   };
 
@@ -124,10 +126,8 @@ const InvoiceList = () => {
     );
   };
 
-  console.log(invoices);
 
   const handleSearch = useDebouncedCallback((term) => {
-    console.log(`Searching... ${term}`);
     if (term) {
       searchInvoice(term)
         .then((res) => setInvoices(res.data))
@@ -137,35 +137,67 @@ const InvoiceList = () => {
         .then((res) => setInvoices(res.data))
         .catch((error) => console.log(error));
     }
+    setCurrentPage(1)
   }, 500);
 
-  const [jsonData,setJsonData] = useState({});
+  const isValidDateFormat = (dateStr: any): boolean => {
+    const dateFormat = /^\d{4}-\d{2}-\d{2}$/;
+    return dateFormat.test(dateStr);
+};
+ 
 
-  const handleFileUpload = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-        const reader = new FileReader();
 
-        reader.onload = (e: ProgressEvent<FileReader>) => {
-            if (e.target?.result) {
-                const data = new Uint8Array(e.target.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
 
-                // Assuming the first sheet is the one we want to read
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
 
-                // Convert sheet to JSON
-                const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                setJsonData(json);
-            }
-        };
 
-        reader.readAsArrayBuffer(file);
-    }
+const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const input = event.target;
+  if (!input.files || input.files.length === 0) {
+    console.error('No file selected.');
+    return;
+  }
+
+  const file = input.files[0];
+  const formData = new FormData();
+  formData.append('file', file);
+
+  vaildateExcel(formData)
+  .then(response => {
+    console.log('Response from server:', response.data);
+
+    getInvoiceList()
+      .then((res) => setInvoices(res.data))
+      .catch((error) => console.log(error));
+
+      dispatch(setOpen({
+        color:"text-[#EEF7FF]",
+        isOpen:true,
+        message:"You imported invoices successfully"
+      }))
+      
+      setTimeout(() => {
+        dispatch(setClose())
+      }, 4000);
+  })
+  .catch((error: AxiosError) => {
+    //console.error('Error:', error.response?.data);
+    dispatch(setOpen({
+      color:"text-[#EEF7FF]",
+      isOpen:true,
+      message:`${error.response?.data}`
+    }))
+    
+    setTimeout(() => {
+      dispatch(setClose())
+    }, 4000);
+  });
+
+  // Clear the file input after uploading
+  input.value = '';
 };
 
-console.log(jsonData)
+
+
 
   const Truncate: React.FC<TruncateProps> = ({ text, maxLength }) => {
     if (text.length <= maxLength) {
@@ -178,6 +210,8 @@ console.log(jsonData)
   };
   
 
+ 
+
   return (
     <div className="md:w-[85%] w-[95%] mx-auto mt-5">
       <div className="w-[100%] flex justify-center gap-5">
@@ -188,23 +222,34 @@ console.log(jsonData)
           placeholder=" Search with invoice number or casherNumber"
         />
         <button
-        onClick={() => generateExcel(invoices)}
-          className="align-middle select-none font-sans font-bold text-center  transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 px-6 rounded-lg bg-gray-800 text-gray-200 shadow-md shadow-gray-900/10 hover:shadow-none hover:shadow-gray-900/20 hover:opacity-[0.85]  active:opacity-[0.85] active:shadow-none hover:text-white w-[8%]"
+        onClick={() => {
+          generateExcel(invoices)
+          dispatch(setOpen({
+            color:"text-[#EEF7FF]",
+            isOpen:true,
+            message:"You exported invoices successfully"
+          }))
+          
+          setTimeout(() => {
+            dispatch(setClose())
+          }, 4000);
+        }}
+          className="align-middle select-none font-sans font-bold text-center  transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 px-6 rounded-lg bg-gray-800 text-gray-200 shadow-md shadow-gray-900/10 hover:shadow-none hover:shadow-gray-900/20 hover:opacity-[0.85]  active:opacity-[0.85] active:shadow-none hover:text-white "
           type="button"
         >
            Export
           </button>
           <label
           htmlFor="input"
-          className="align-middle select-none font-sans font-bold text-center  transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 px-6 rounded-lg bg-gray-800 text-gray-200 shadow-md shadow-gray-900/10 hover:shadow-none hover:shadow-gray-900/20 hover:opacity-[0.85]  active:opacity-[0.85] active:shadow-none hover:text-white w-[8%]"
+          className="align-middle select-none font-sans font-bold text-center  transition-all disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none text-xs py-3 px-6 rounded-lg bg-gray-800 text-gray-200 shadow-md shadow-gray-900/10 hover:shadow-none hover:shadow-gray-900/20 hover:opacity-[0.85]  active:opacity-[0.85] active:shadow-none hover:text-white "
 
         >
            Import
           </label>
-          <input id="input" type="file" hidden accept=".xlsx"></input>
+          <input id="input" type="file" onChange={handleFileChange}  accept=".xlsx" hidden></input>
       </div>
 
-      <div className="overflow-auto over overflow-y-hidden  rounded-lg shadows  w-[85%] mx-auto">
+      <div className="overflow-auto  overflow-y-hidden  rounded-lg shadows  w-[85%] mx-auto">
         <table className="min-w-full divide-y divide-gray-200 mt-5 " ref={tableref}>
           <thead>
             <tr>
@@ -216,7 +261,7 @@ console.log(jsonData)
               </th>
               <th
                 scope="col"
-                className="px-6 py-3 text-start font-bold  text-gray-500  w-[200px]"
+                className="px-6 py-3 text-center font-bold  text-gray-500  w-[200px]"
               >
                 Date
               </th>
@@ -248,13 +293,13 @@ console.log(jsonData)
                    {invoice.invoiceId}
                   </Link>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 w-[200px]">
+                <td className="px-6 py-4 whitespace-nowrap  text-center text-sm text-gray-800 w-[200px]">
                 {formatDateString(invoice.date)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-center text-gray-800 w-[200px]">
                   {invoice.casherName}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 w-[200px]">
+                <td className="px-6 py-4 whitespace-nowrap  text-sm text-gray-800 w-[200px]">
                   {invoice.township}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 w-[200px]">

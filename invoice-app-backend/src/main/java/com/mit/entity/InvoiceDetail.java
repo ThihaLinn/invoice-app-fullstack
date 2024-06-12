@@ -20,19 +20,25 @@ public class InvoiceDetail {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
 	public Integer invoiceDetailId;
 	public String item;
-	public Integer price;
-	public Integer amount;
-	public Integer totalAmount;
+	public Double price;
+	public Double amount;
+	public Double totalAmount;
 	
 	@ManyToOne()
 	public Invoice invoice;
 
-	public InvoiceDetail(String item, Integer price, Integer amount, Integer totalAmount) {
+	public InvoiceDetail(String item, Double price, Double amount, Double totalAmount) {
 		super();
 		this.item = item;
 		this.price = price;
 		this.amount = amount;
 		this.totalAmount = totalAmount;
+	}
+
+	@Override
+	public String toString() {
+		return "InvoiceDetail [invoiceDetailId=" + invoiceDetailId + ", item=" + item + ", price=" + price + ", amount="
+				+ amount + ", totalAmount=" + totalAmount + "]";
 	}
 
 	

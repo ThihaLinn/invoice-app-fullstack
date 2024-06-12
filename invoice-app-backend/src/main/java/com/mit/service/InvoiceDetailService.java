@@ -194,7 +194,7 @@ public class InvoiceDetailService implements InvoiceDetailInf{
 
 		            // Create header row
 		            Row headerRow = sheet.createRow(0);
-		            String[] headers = {"Invoice Id", "Date", "Township", "Remark", "Invoice Detail Id", "Item", "Price", "Quantity", "Total Amount"};
+		            String[] headers = {"Invoice Id","Casher Name", "Date", "Township", "Remark", "Invoice Detail Id", "Item", "Price", "Quantity", "Total Amount"};
 		            for (int i = 0; i < headers.length; i++) {
 		                Cell cell = headerRow.createCell(i);
 		                cell.setCellValue(headers[i]);
@@ -206,14 +206,15 @@ public class InvoiceDetailService implements InvoiceDetailInf{
 		                for (InvoiceDetail iDetail : invoice.invoiceDetails) {
 		                    Row dataRow = sheet.createRow(rowIndex++);
 		                    dataRow.createCell(0).setCellValue(invoice.invoiceId);
-		                    dataRow.createCell(1).setCellValue(invoice.date.toString());
-		                    dataRow.createCell(2).setCellValue(invoice.township.name());
-		                    dataRow.createCell(3).setCellValue(invoice.remark);
-		                    dataRow.createCell(4).setCellValue(iDetail.invoiceDetailId);
-		                    dataRow.createCell(5).setCellValue(iDetail.item);
-		                    dataRow.createCell(6).setCellValue(iDetail.price);
-		                    dataRow.createCell(7).setCellValue(iDetail.amount);
-		                    dataRow.createCell(8).setCellValue(iDetail.totalAmount);
+		                    dataRow.createCell(1).setCellValue(invoice.casherName);
+		                    dataRow.createCell(2).setCellValue(invoice.date.toString());
+		                    dataRow.createCell(3).setCellValue(invoice.township.name());
+		                    dataRow.createCell(4).setCellValue(invoice.remark);
+		                    dataRow.createCell(5).setCellValue(iDetail.invoiceDetailId);
+		                    dataRow.createCell(6).setCellValue(iDetail.item);
+		                    dataRow.createCell(7).setCellValue(iDetail.price);
+		                    dataRow.createCell(8).setCellValue(iDetail.amount);
+		                    dataRow.createCell(9).setCellValue(iDetail.totalAmount);
 		                }
 		            }
 

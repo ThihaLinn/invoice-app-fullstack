@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import { Invoice, township } from "../types/Invoice";
 import { InvoiceDetail } from "../types/InvoiceDetail";
 import { createInvoice } from "../api/invoice";
-import { Link, redirect, useNavigate } from "react-router-dom";
-import { changeString, invoiceSchema } from "../util/validation";
-import { format } from "date-fns";
+import { Link, useNavigate } from "react-router-dom";
+import { formatDate, invoiceSchema, numberWithCommas } from "../util/validation";
+import AlertBox from "./AlertBox";
+import { useAppDispatch } from "../app/hook";
+import { setClose, setOpen } from "../app/slice/alertSlice";
 
 const CreateInvoice = () => {
   let currentDate = new Date();
@@ -13,12 +15,13 @@ const CreateInvoice = () => {
 
   const [value, setValue] = useState<number>(1);
   const [totalAmount, setTotalAmount] = useState<number[]>();
+  const dispatch = useAppDispatch()
 
   let [invoice, setInvoice] = useState<Invoice>({
     invoiceId: 0,
     casherName: "",
     township: township[2],
-    date: changeString(currentDate),
+    date: formatDate(currentDate),
     remark: "",
     invoiceDetailDtos: [
       {
@@ -115,7 +118,16 @@ const CreateInvoice = () => {
     if (result.success) {
       try {
         createInvoice(invoice);
+        dispatch(setOpen({
+          color:"text-[#EEF7FF]",
+          isOpen:true,
+          message:"You created invoice successfully"
+        }))
+        
         navigate("/");
+        setTimeout(() => {
+          dispatch(setClose())
+        }, 4000);
         //window.location.reload();
       } catch (error) {
         console.log(error);
@@ -123,27 +135,25 @@ const CreateInvoice = () => {
     }
   };
 
-   const total = () =>{
+  const total = () => {
+    let value = 0;
 
-    let value =0
-
-    const a = invoice.invoiceDetailDtos.map(detail => {
-      value+=detail.price*detail.amount
-    })
+    const a = invoice.invoiceDetailDtos.map((detail) => {
+      value += detail.price * detail.amount;
+    });
 
     return value;
-  }
+  };
 
   console.log(errors);
+  console.log(invoice);
 
   return (
     <div className="w-[80%] mx-auto mt-3 md:px-10 px-5  mb-1">
       <form action="">
         <div>
           <fieldset className="border-2 border-gray-400 rounded-sm md:px-2 pb-3 ">
-            <legend className="font-semibold ms-4  px-3">
-               Invoice
-            </legend>
+            <legend className="font-semibold ms-4  px-3">Invoice</legend>
 
             <div className="grid xl:grid-cols-3 md:grid-cols-2  xl:gap-10 md:gap-5  h-fit  w-[100%] ">
               <div className="flex flex-col justify-evenly  h-24">
@@ -172,6 +182,7 @@ const CreateInvoice = () => {
                 <div className="w-[80%] mx-auto flex flex-col justify-evenly h-20">
                   <div>Date</div>
                   <input
+                    //defaultValue={formatDateString(currentDate)}
                     required
                     value={invoice.date}
                     onChange={(event) => {
@@ -228,11 +239,11 @@ const CreateInvoice = () => {
               ></textarea>
             </div>
           </fieldset>
-          <div className="mt-5">
-            <fieldset className="border-2 border-gray-400 rounded-sm lg:p-5">
+          <fieldset className="border-2 border-gray-400 rounded-sm lg:p-5 mt-5  overflow-hidden">
             <legend className="font-semibold  px-3">Invoice Details</legend>
-              <div className="overflow-x-auto shadows">
-                <table className="min-w-full divide-y divide-gray-200 ">
+            <div className="">
+              <div className="overflow-auto  overflow-y-hidden  rounded-lg shadows  mx-auto">
+                <table className="min-w-full divide-y divide-gray-200 mt-5 ">
                   <thead>
                     <tr>
                       <th
@@ -288,7 +299,7 @@ const CreateInvoice = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800 relative ">
                           <input
                             value={invoiceDetail.item}
-                            onChange={(event) => {
+                            onChange={(event) => { 
                               console.log(event.target.value);
                               changeItem(event.target.value, invoiceDetail.id);
                             }}
@@ -315,8 +326,9 @@ const CreateInvoice = () => {
                               min={0}
                               value={invoiceDetail.price}
                               required
+                              inputMode="numeric"
                               type="number"
-                              className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-24"
+                              className="focus:border-none appearance-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-24"
                             />
                             {errors[`invoiceDetailDtos.${index}.price`] && (
                               <small className="error block text-red-600 text-sm  absolute bottom-0 left-0 right-0">
@@ -338,7 +350,7 @@ const CreateInvoice = () => {
                             value={invoiceDetail.amount}
                             required
                             type="number"
-                            className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-[65px]"
+                            className="focus:border-none appearance-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-[65px]"
                           />
                           {errors[`invoiceDetailDtos.${index}.amount`] && (
                             <div className="error">
@@ -348,7 +360,7 @@ const CreateInvoice = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-gray-800  ">
                           <div className="">
-                            {invoiceDetail.price * invoiceDetail.amount}
+                            {numberWithCommas(invoiceDetail.price * invoiceDetail.amount)}
                           </div>
                           {errors[`invoiceDetailDtos.${index}.amount`] && (
                             <small className="error">
@@ -377,14 +389,14 @@ const CreateInvoice = () => {
                       <td></td>
                       <td></td>
                       <td className="font-semibold">Total Amount</td>
-                      <td className="text-center">{total()}</td>
+                      <td className="text-center">{numberWithCommas(total())}</td>
                       <td></td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
-            </fieldset>
-          </div>
+            </div>
+          </fieldset>
           <div className="flex justify-end items-center mt-5">
             <button
               onClick={() => saveInvoice()}

@@ -5,9 +5,9 @@ import com.mit.entity.InvoiceDetail;
 public record InvoiceDetailDto(
 		 Integer id,
 		 String item,
-		 Integer price,
-		 Integer amount,
-		 Integer totalAmount
+		 Double price,
+		 Double amount,
+		 Double totalAmount
 		) {
 
 	
