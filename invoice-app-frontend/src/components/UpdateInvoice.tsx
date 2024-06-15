@@ -4,9 +4,10 @@ import { InvoiceDetail } from "../types/InvoiceDetail";
 import { Invoice, township } from "../types/Invoice";
 import { deleteInvoice, editInvoice, getInvoice } from "../api/invoice";
 import { format } from "date-fns";
-import { invoiceSchema } from "../util/validation";
+import { invoiceSchema, numberWithCommas } from "../util/validation";
 import { useAppDispatch } from "../app/hook";
 import { setClose, setOpen } from "../app/slice/alertSlice";
+import { log } from "console";
 
 const UpdateInvoice = () => {
   let currentDate = new Date();
@@ -28,8 +29,8 @@ const UpdateInvoice = () => {
         id: 1,
         item: "",
         price: 0,
-        amount: 1,
-        totalAmount: 0,
+        quantity: 1,
+        setAmount: 0,
       },
     ],
   });
@@ -44,6 +45,8 @@ const UpdateInvoice = () => {
     setInvoice({ ...invoice, township: invoice.township });
   }, []);
 
+  console.log(invoice);
+
   const add = () => {
     //setDate([...data, { id: value + 1, item: "", price: 0, amount: 1, totalAmount: 0 }])
     setValue(value + 1);
@@ -51,7 +54,7 @@ const UpdateInvoice = () => {
       ...invoice,
       invoiceDetailDtos: [
         ...invoice.invoiceDetailDtos,
-        { id: value + 1, item: "", price: 0, amount: 1, totalAmount: 0 },
+        { id: value + 1, item: "", price: 0, quantity: 1, setAmount: 0 },
       ],
     });
   };
@@ -80,7 +83,7 @@ const UpdateInvoice = () => {
       (data) => data.id === id
     ) as InvoiceDetail;
     result.price = price;
-    result.totalAmount = result.amount * result.price;
+    result.setAmount = result.quantity * result.price;
     const final = invoice.invoiceDetailDtos.map((data) =>
       data.id == result.id ? result : data
     );
@@ -91,8 +94,8 @@ const UpdateInvoice = () => {
     const result = invoice.invoiceDetailDtos.find(
       (data) => data.id === id
     ) as InvoiceDetail;
-    result.amount = quantity;
-    result.totalAmount = result.amount * result.price;
+    result.quantity = quantity;
+    result.setAmount = result.quantity * result.price;
     const final = invoice.invoiceDetailDtos.map((data) =>
       data.id == result.id ? result : data
     );
@@ -142,9 +145,6 @@ const UpdateInvoice = () => {
         );
 
         navigate("/");
-        setTimeout(() => {
-          dispatch(setClose());
-        }, 4000);
       } catch (error) {
         console.log(error);
       }
@@ -164,9 +164,6 @@ const UpdateInvoice = () => {
       );
 
       navigate("/");
-      setTimeout(() => {
-        dispatch(setClose());
-      }, 4000);
     } catch (error) {
       console.log(error);
     }
@@ -176,7 +173,7 @@ const UpdateInvoice = () => {
     let value = 0;
 
     const a = invoice.invoiceDetailDtos.map((detail) => {
-      value += detail.price * detail.amount;
+      value += detail.price * detail.quantity;
     });
 
     return value;
@@ -232,6 +229,11 @@ const UpdateInvoice = () => {
                     className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400  focus:outline-gray-400 outline-1 w-[100%] "
                     placeholder=""
                   />
+                  {errors["date"] && (
+                    <small className="error block text-red-600 absolute sm:-bottom-2 -bottom-3">
+                      {errors["date"]}
+                    </small>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col justify-evenly  h-24">
@@ -275,7 +277,7 @@ const UpdateInvoice = () => {
               ></textarea>
             </div>
           </fieldset>
-          <fieldset className="border-2 border-gray-400 rounded-sm lg:p-5 mt-5">
+          <fieldset className="border-2 border-gray-400 rounded-sm lg:p-2 mt-5">
             <legend className="font-semibold ms-4 px-3">Invoice Details</legend>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -309,7 +311,7 @@ const UpdateInvoice = () => {
                       scope="col"
                       className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase"
                     >
-                      Total Amount
+                      Set Amount
                     </th>
                     <th
                       scope="col"
@@ -320,7 +322,7 @@ const UpdateInvoice = () => {
                         type="button"
                         className="text-green-700 hover:text-white border border-green-700 hover:bg-green-800 focus:ring-0 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2"
                       >
-                        +++ADD
+                        +ADD
                       </button>
                     </th>
                   </tr>
@@ -379,22 +381,26 @@ const UpdateInvoice = () => {
                             );
                           }}
                           min={1}
-                          value={invoiceDetail.amount}
+                          value={invoiceDetail.quantity}
                           required
                           type="number"
                           className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-[65px]"
                         />
-                        {errors[`invoiceDetailDtos.${index}.amount`] && (
+                        {errors[`invoiceDetailDtos.${index}.quantity`] && (
                           <div className="error">
-                            {errors[`invoiceDetailDtos.${index}.amount`]}
+                            {errors[`invoiceDetailDtos.${index}.quantity`]}
                           </div>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-gray-800">
-                        <div>{invoiceDetail.price * invoiceDetail.amount}</div>
-                        {errors[`invoiceDetailDtos.${index}.amount`] && (
+                        <div>
+                          {numberWithCommas(
+                            invoiceDetail.price * invoiceDetail.quantity
+                          )}
+                        </div>
+                        {errors[`invoiceDetailDtos.${index}.setAmount`] && (
                           <small className="error">
-                            {errors[`invoiceDetailDtos.${index}.amount`]}
+                            {errors[`invoiceDetailDtos.${index}.setAmount`]}
                           </small>
                         )}
                       </td>
@@ -412,13 +418,15 @@ const UpdateInvoice = () => {
                     </tr>
                   ))}
                 </tbody>
-                <tfoot>
+                <tfoot className="">
                   <tr>
                     <td></td>
                     <td></td>
                     <td></td>
-                    <td className="font-semibold">Total Amount</td>
-                    <td className="text-center">{total()}</td>
+                    <td className="font-semibold pt-5">Total Amount</td>
+                    <td className="text-center pt-5">
+                      {numberWithCommas(total())}
+                    </td>
                     <td></td>
                   </tr>
                 </tfoot>
@@ -443,12 +451,14 @@ const UpdateInvoice = () => {
             Delete
           </button>
 
-          <button
-            type="button"
-            className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
-          >
-            <Link to={"/"}>Invoice List</Link>
-          </button>
+          <Link to={"/"}>
+            <button
+              type="button"
+              className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+            >
+              Invoice List
+            </button>
+          </Link>
         </div>
       </form>
     </div>

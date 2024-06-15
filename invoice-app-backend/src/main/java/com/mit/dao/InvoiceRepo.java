@@ -16,6 +16,7 @@ public interface InvoiceRepo extends JpaRepository<Invoice, Integer> {
 	Optional<Invoice> findByInvoiceId(Integer Id);
  	
     List<Invoice> findAllByOrderByInvoiceIdDesc();   
+    
 
 	
 }

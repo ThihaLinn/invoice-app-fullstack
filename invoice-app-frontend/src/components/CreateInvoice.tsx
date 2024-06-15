@@ -3,10 +3,15 @@ import { Invoice, township } from "../types/Invoice";
 import { InvoiceDetail } from "../types/InvoiceDetail";
 import { createInvoice } from "../api/invoice";
 import { Link, useNavigate } from "react-router-dom";
-import { formatDate, invoiceSchema, numberWithCommas } from "../util/validation";
+import {
+  getFormattedDate,
+  invoiceSchema,
+  numberWithCommas,
+} from "../util/validation";
 import AlertBox from "./AlertBox";
 import { useAppDispatch } from "../app/hook";
 import { setClose, setOpen } from "../app/slice/alertSlice";
+import { set } from "date-fns";
 
 const CreateInvoice = () => {
   let currentDate = new Date();
@@ -15,21 +20,21 @@ const CreateInvoice = () => {
 
   const [value, setValue] = useState<number>(1);
   const [totalAmount, setTotalAmount] = useState<number[]>();
-  const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch();
 
   let [invoice, setInvoice] = useState<Invoice>({
     invoiceId: 0,
     casherName: "",
     township: township[2],
-    date: formatDate(currentDate),
+    date:getFormattedDate(),
     remark: "",
     invoiceDetailDtos: [
       {
         id: 1,
         item: "",
         price: 0,
-        amount: 1,
-        totalAmount: 0,
+        quantity: 1,
+        setAmount: 0,
       },
     ],
   });
@@ -58,7 +63,7 @@ const CreateInvoice = () => {
       ...invoice,
       invoiceDetailDtos: [
         ...invoice.invoiceDetailDtos,
-        { id: value + 1, item: "", price: 0, amount: 1, totalAmount: 0 },
+        { id: value + 1, item: "", price: 0, quantity: 1, setAmount: 0 },
       ],
     });
   };
@@ -94,7 +99,7 @@ const CreateInvoice = () => {
       (data) => data.id === id
     ) as InvoiceDetail;
     result.price = price;
-    result.totalAmount = result.amount * result.price;
+    result.setAmount = result.quantity * result.price;
     const final = invoice.invoiceDetailDtos.map((data) =>
       data.id == result.id ? result : data
     );
@@ -104,30 +109,60 @@ const CreateInvoice = () => {
     const result = invoice.invoiceDetailDtos.find(
       (data) => data.id === id
     ) as InvoiceDetail;
-    result.amount = quantity;
-    result.totalAmount = result.amount * result.price;
+    result.quantity = quantity;
+    result.setAmount = result.quantity * result.price;
     const final = invoice.invoiceDetailDtos.map((data) =>
       data.id == result.id ? result : data
     );
     setInvoice({ ...invoice, invoiceDetailDtos: final });
   };
 
-  const saveInvoice = () => {
+  function formatDateToDDMMYYYY(dateString: string) {
+    try {
+      // Parse the date string using a regular expression (more flexible)
+      const regex = /(\d{4})-(\d{2})-(\d{2})/;
+      const match = dateString.match(regex);
+  
+      if (match) {
+        // Extract year, month, and day from matched groups
+        const year = match[1];
+        const month = match[2].padStart(2, '0'); // Ensure two-digit month
+        const day = match[3].padStart(2, '0'); // Ensure two-digit day
+  
+        // Reconstruct the date in dd/MM/YYYY format
+        return `${day}/${month}/${year}`;
+      } else {
+        // Handle invalid date format gracefully (optional)
+        console.error("Invalid date format:", dateString);
+        return null; // Or return a default value (e.g., "Invalid Date")
+      }
+    } catch (error) {
+      // Handle other potential errors during parsing
+      console.error("Error formatting date:", error);
+      return null; // Or return a default value
+    }
+  }
+
+  
+  const saveInvoice = async () => {
+    console.log(invoice)
+
     validate(invoice);
     const result = invoiceSchema.safeParse(invoice);
     if (result.success) {
       try {
+        console.log(invoice)
         createInvoice(invoice);
-        dispatch(setOpen({
-          color:"text-[#EEF7FF]",
-          isOpen:true,
-          message:"You created invoice successfully"
-        }))
-        
+        dispatch(
+          setOpen({
+            color: "text-[#EEF7FF]",
+            isOpen: true,
+            message: "You created invoice successfully",
+          })
+        );
+
         navigate("/");
-        setTimeout(() => {
-          dispatch(setClose())
-        }, 4000);
+
         //window.location.reload();
       } catch (error) {
         console.log(error);
@@ -139,7 +174,7 @@ const CreateInvoice = () => {
     let value = 0;
 
     const a = invoice.invoiceDetailDtos.map((detail) => {
-      value += detail.price * detail.amount;
+      value += detail.price * detail.quantity;
     });
 
     return value;
@@ -182,7 +217,6 @@ const CreateInvoice = () => {
                 <div className="w-[80%] mx-auto flex flex-col justify-evenly h-20">
                   <div>Date</div>
                   <input
-                    //defaultValue={formatDateString(currentDate)}
                     required
                     value={invoice.date}
                     onChange={(event) => {
@@ -194,8 +228,12 @@ const CreateInvoice = () => {
                     }}
                     type="date"
                     className="focus:border-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400  focus:outline-gray-400 outline-1 w-[100%] "
-                    placeholder=""
                   />
+                  {errors["date"] && (
+                    <small className="error block text-red-600 absolute sm:-bottom-2 -bottom-3">
+                      {errors["date"]}
+                    </small>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col justify-evenly  h-24">
@@ -239,11 +277,11 @@ const CreateInvoice = () => {
               ></textarea>
             </div>
           </fieldset>
-          <fieldset className="border-2 border-gray-400 rounded-sm lg:p-5 mt-5  overflow-hidden">
+          <fieldset className="border-2 border-gray-400 rounded-sm lg:p-2 mt-3  overflow-hidden">
             <legend className="font-semibold  px-3">Invoice Details</legend>
             <div className="">
               <div className="overflow-auto  overflow-y-hidden  rounded-lg shadows  mx-auto">
-                <table className="min-w-full divide-y divide-gray-200 mt-5 ">
+                <table className="min-w-full divide-y divide-gray-200 mt-3 ">
                   <thead>
                     <tr>
                       <th
@@ -274,7 +312,7 @@ const CreateInvoice = () => {
                         scope="col"
                         className=" text-center text-xs font-medium text-gray-500 uppercase"
                       >
-                        Total Amount
+                        Set Amount
                       </th>
                       <th
                         scope="col"
@@ -285,7 +323,7 @@ const CreateInvoice = () => {
                           type="button"
                           className="text-green-700 hover:text-white border border-green-700 hover:bg-green-800 focus:ring-0 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-4 py-2 text-center me-2 mb-2 dark:border-green-500 dark:text-green-500 dark:hover:text-white dark:hover:bg-green-600 dark:focus:ring-green-800"
                         >
-                          +++ADD
+                          +ADD
                         </button>
                       </th>
                     </tr>
@@ -299,7 +337,7 @@ const CreateInvoice = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-800 relative ">
                           <input
                             value={invoiceDetail.item}
-                            onChange={(event) => { 
+                            onChange={(event) => {
                               console.log(event.target.value);
                               changeItem(event.target.value, invoiceDetail.id);
                             }}
@@ -347,24 +385,26 @@ const CreateInvoice = () => {
                               );
                             }}
                             min={1}
-                            value={invoiceDetail.amount}
+                            value={invoiceDetail.quantity}
                             required
                             type="number"
                             className="focus:border-none appearance-none focus:ring-0 py-2 px-3 outline-none ring-1 ring-gray-400 focus:outline-gray-400 outline-1 w-[65px]"
                           />
-                          {errors[`invoiceDetailDtos.${index}.amount`] && (
+                          {errors[`invoiceDetailDtos.${index}.quantity`] && (
                             <div className="error">
-                              {errors[`invoiceDetailDtos.${index}.amount`]}
+                              {errors[`invoiceDetailDtos.${index}.quantity`]}
                             </div>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-gray-800  ">
                           <div className="">
-                            {numberWithCommas(invoiceDetail.price * invoiceDetail.amount)}
+                            {numberWithCommas(
+                              invoiceDetail.price * invoiceDetail.quantity
+                            )}
                           </div>
-                          {errors[`invoiceDetailDtos.${index}.amount`] && (
+                          {errors[`invoiceDetailDtos.${index}.setAmount`] && (
                             <small className="error">
-                              {errors[`invoiceDetailDtos.${index}.amount`]}
+                              {errors[`invoiceDetailDtos.${index}.setAmount`]}
                             </small>
                           )}
                         </td>
@@ -383,13 +423,15 @@ const CreateInvoice = () => {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot>
+                  <tfoot className="">
                     <tr>
                       <td></td>
                       <td></td>
                       <td></td>
-                      <td className="font-semibold">Total Amount</td>
-                      <td className="text-center">{numberWithCommas(total())}</td>
+                      <td className="font-semibold pt-5">Total Amount</td>
+                      <td className="text-center pt-5">
+                        {numberWithCommas(total())}
+                      </td>
                       <td></td>
                     </tr>
                   </tfoot>
@@ -405,13 +447,14 @@ const CreateInvoice = () => {
             >
               Save
             </button>
-
-            <button
-              type="button"
-              className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
-            >
-              <Link to={"/"}>Invoice List</Link>
-            </button>
+            <Link to={"/"}>
+              <button
+                type="button"
+                className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+              >
+                Invoice List
+              </button>
+            </Link>
           </div>
         </div>
       </form>

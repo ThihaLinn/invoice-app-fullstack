@@ -2,14 +2,19 @@ package com.mit.service;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
@@ -137,7 +142,7 @@ public class InvoiceDetailService implements InvoiceDetailInf{
 			updatedInvoiceDetailsIds.stream().forEach(uId ->{
 				if(!outOfDateInvoiceDetailsIds.contains(uId)) {
 					var update = invoiceDetailDtos.stream().filter(ivd -> ivd.id()==uId).toList().get(0);
-					update = new InvoiceDetailDto(null, update.item(), update.price(), update.amount(), update.totalAmount());
+					update = new InvoiceDetailDto(null, update.item(), update.price(),update.quantity(), update.setAmount());
 					invoiceDetailDto.add(update);
 				}else {
 					var update = invoiceDetailDtos.stream().filter(ivd -> ivd.id()==uId).toList().get(0);
@@ -183,49 +188,146 @@ public class InvoiceDetailService implements InvoiceDetailInf{
 	}
 	
 	public  ByteArrayInputStream generateExcel(List<Invoice> invoices) throws Exception {
-		
-				invoices.stream().forEach(System.out::println);
-				
-				invoices = invoices.stream().map(inv -> invoiceRepo.findById(inv.invoiceId).get()).toList();	
+		 invoices.stream().forEach(System.out::println);
 
-		
-		        try (Workbook workbook = new XSSFWorkbook()) {
-		            Sheet sheet = workbook.createSheet("Data");
+		    invoices = invoices.stream().map(inv -> invoiceRepo.findById(inv.getInvoiceId()).orElse(null)).toList();
 
-		            // Create header row
-		            Row headerRow = sheet.createRow(0);
-		            String[] headers = {"Invoice Id","Casher Name", "Date", "Township", "Remark", "Invoice Detail Id", "Item", "Price", "Quantity", "Total Amount"};
-		            for (int i = 0; i < headers.length; i++) {
-		                Cell cell = headerRow.createCell(i);
-		                cell.setCellValue(headers[i]);
+		    try (Workbook workbook = new XSSFWorkbook()) {
+		        Sheet sheet = workbook.createSheet("Data");
+
+		        // Create header row
+		        Row headerRow = sheet.createRow(0);
+		        String[] headers = {"Invoice Id", "Casher Name", "Date", "Township", "Remark", "Invoice Detail Id", "Item", "Price", "Quantity", "Set Amount", "Total Amount"};
+		        for (int i = 0; i < headers.length; i++) {
+		            Cell cell = headerRow.createCell(i);
+		            cell.setCellValue(headers[i]);
+		        }
+
+		        // Create cell styles
+		        CellStyle style = workbook.createCellStyle();
+		        style.setAlignment(HorizontalAlignment.CENTER);
+		        style.setVerticalAlignment(VerticalAlignment.CENTER);
+
+		        CellStyle rightAlignStyle = workbook.createCellStyle();
+		        rightAlignStyle.setAlignment(HorizontalAlignment.RIGHT);
+		        rightAlignStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+		        // Fill data rows
+		        int rowIndex = 1; // Start after header row
+		        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+		        for (Invoice invoice : invoices) {
+		            if (invoice == null) continue;
+
+		            int detailsCount = invoice.getInvoiceDetails().size();
+		            int startRow = rowIndex;
+		            double totalAmount = 0;
+
+		            // Fill invoice data
+		            for (int i = 0; i < detailsCount; i++) {
+		                Row dataRow = sheet.createRow(rowIndex++);
+		                if (i == 0) { // First row for this invoice, set the main invoice fields
+		                    Cell cell = dataRow.createCell(0);
+		                    cell.setCellValue(invoice.getInvoiceId());
+		                    cell.setCellStyle(rightAlignStyle);
+
+		                    cell = dataRow.createCell(1);
+		                    cell.setCellValue(invoice.getCasherName());
+		                    cell.setCellStyle(style);
+
+		                    cell = dataRow.createCell(2);
+		                    // Format date to dd/MM/yyyy
+		                    String formattedDate = invoice.getDate().format(dateFormatter);
+		                    cell.setCellValue(formattedDate);
+		                    cell.setCellStyle(style);
+
+		                    cell = dataRow.createCell(3);
+		                    cell.setCellValue(invoice.getTownship().name());
+		                    cell.setCellStyle(style);
+
+		                    cell = dataRow.createCell(4);
+		                    cell.setCellValue(invoice.getRemark());
+		                    cell.setCellStyle(style);
+		                }
+
+		                // Fill invoice detail data
+		                Cell cell = dataRow.createCell(5);
+		                cell.setCellValue(invoice.getInvoiceDetails().get(i).getInvoiceDetailId());
+		                cell.setCellStyle(rightAlignStyle);
+
+		                cell = dataRow.createCell(6);
+		                cell.setCellValue(invoice.getInvoiceDetails().get(i).getItem());
+		                cell.setCellStyle(style);
+
+		                cell = dataRow.createCell(7);
+		                cell.setCellValue(invoice.getInvoiceDetails().get(i).getPrice());
+		                cell.setCellStyle(rightAlignStyle);
+
+		                cell = dataRow.createCell(8);
+		                cell.setCellValue(invoice.getInvoiceDetails().get(i).getQuantity());
+		                cell.setCellStyle(rightAlignStyle);
+
+		                cell = dataRow.createCell(9);
+		                cell.setCellValue(invoice.getInvoiceDetails().get(i).getSetAmount());
+		                cell.setCellStyle(rightAlignStyle);
+
+		                totalAmount += invoice.getInvoiceDetails().get(i).getSetAmount();
 		            }
 
-		            // Fill data rows
-		            int rowIndex = 1; // Start after header row
-		            for (Invoice invoice : invoices) {
-		                for (InvoiceDetail iDetail : invoice.invoiceDetails) {
-		                    Row dataRow = sheet.createRow(rowIndex++);
-		                    dataRow.createCell(0).setCellValue(invoice.invoiceId);
-		                    dataRow.createCell(1).setCellValue(invoice.casherName);
-		                    dataRow.createCell(2).setCellValue(invoice.date.toString());
-		                    dataRow.createCell(3).setCellValue(invoice.township.name());
-		                    dataRow.createCell(4).setCellValue(invoice.remark);
-		                    dataRow.createCell(5).setCellValue(iDetail.invoiceDetailId);
-		                    dataRow.createCell(6).setCellValue(iDetail.item);
-		                    dataRow.createCell(7).setCellValue(iDetail.price);
-		                    dataRow.createCell(8).setCellValue(iDetail.amount);
-		                    dataRow.createCell(9).setCellValue(iDetail.totalAmount);
+		            // Set Total Amount for the first row of the invoice
+		            Row totalRow = sheet.getRow(startRow);
+		            Cell totalAmountCell = totalRow.createCell(10);
+		            totalAmountCell.setCellValue(totalAmount);
+		            totalAmountCell.setCellStyle(rightAlignStyle);
+
+		            // Merge cells for invoice data if there are two or more details
+		            if (detailsCount > 1) {
+		                CellRangeAddress mergedRegion = new CellRangeAddress(startRow, rowIndex - 1, 0, 0);
+		                sheet.addMergedRegion(mergedRegion);
+		                for (int j = startRow; j < rowIndex; j++) {
+		                    Row row = sheet.getRow(j);
+		                    Cell cell = row.getCell(0);
+		                    if (cell == null) {
+		                        cell = row.createCell(0);
+		                    }
+		                    cell.setCellStyle(rightAlignStyle);
+		                }
+
+		                for (int i = 1; i < 5; i++) { // Start from 1 to skip aligning the first column (Invoice Id)
+		                    mergedRegion = new CellRangeAddress(startRow, rowIndex - 1, i, i);
+		                    sheet.addMergedRegion(mergedRegion);
+		                    for (int j = startRow; j < rowIndex; j++) {
+		                        Row row = sheet.getRow(j);
+		                        Cell cell = row.getCell(i);
+		                        if (cell == null) {
+		                            cell = row.createCell(i);
+		                        }
+		                        cell.setCellStyle(style);
+		                    }
+		                }
+
+		                // Merge cells for Total Amount column
+		                CellRangeAddress totalAmountRegion = new CellRangeAddress(startRow, rowIndex - 1, 10, 10);
+		                sheet.addMergedRegion(totalAmountRegion);
+		                for (int j = startRow; j < rowIndex; j++) {
+		                    Row row = sheet.getRow(j);
+		                    Cell cell = row.getCell(10);
+		                    if (cell == null) {
+		                        cell = row.createCell(10);
+		                    }
+		                    cell.setCellStyle(rightAlignStyle);
 		                }
 		            }
-
-		            try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-		                workbook.write(out);
-		                return new ByteArrayInputStream(out.toByteArray());
-		            }
 		        }
+
+		        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+		            workbook.write(out);
+		            return new ByteArrayInputStream(out.toByteArray());
+		        }
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		        return null;
 		    }
-	
-	
+		}
 	
 
 }

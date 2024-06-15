@@ -26,7 +26,9 @@ const InvoiceList = () => {
   const dispatch = useAppDispatch()
 
 
-
+  setTimeout(() => {
+    dispatch(setClose())
+  }, 4000);
 
 
   if (invoices.length == 0) {
@@ -175,9 +177,6 @@ const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         message:"You imported invoices successfully"
       }))
       
-      setTimeout(() => {
-        dispatch(setClose())
-      }, 4000);
   })
   .catch((error: AxiosError) => {
     //console.error('Error:', error.response?.data);
@@ -189,7 +188,7 @@ const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     
     setTimeout(() => {
       dispatch(setClose())
-    }, 4000);
+    }, 6000);
   });
 
   // Clear the file input after uploading

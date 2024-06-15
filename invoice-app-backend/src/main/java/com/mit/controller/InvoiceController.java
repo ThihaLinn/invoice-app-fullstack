@@ -53,6 +53,7 @@ public class InvoiceController {
 
 	@PostMapping("/createInvoice")
 	public ResponseEntity<String> createInvoice(@RequestBody InvoiceCreateRequest invoiceCreateRequest){
+		invoiceCreateRequest = new InvoiceCreateRequest(invoiceCreateRequest.invoiceId(), invoiceCreateRequest.casherName(), invoiceCreateRequest.date(),invoiceCreateRequest.township()	,invoiceCreateRequest.remark(),invoiceCreateRequest.invoiceDetailDtos());
 		invoiceService.createInvoice(
 				 new InvoiceDto(invoiceCreateRequest.invoiceId(),invoiceCreateRequest.casherName(),invoiceCreateRequest.date(),invoiceCreateRequest.township(),invoiceCreateRequest.remark()),
 				invoiceCreateRequest.invoiceDetailDtos());

@@ -21,27 +21,28 @@ public class InvoiceDetail {
 	public Integer invoiceDetailId;
 	public String item;
 	public Double price;
-	public Double amount;
-	public Double totalAmount;
+	public Double quantity;
+	public Double setAmount;
 	
 	@ManyToOne()
 	public Invoice invoice;
 
-	public InvoiceDetail(String item, Double price, Double amount, Double totalAmount) {
+	public InvoiceDetail(String item, Double price,Double quantity, Double setAmount) {
 		super();
 		this.item = item;
 		this.price = price;
-		this.amount = amount;
-		this.totalAmount = totalAmount;
+		this.quantity = quantity;
+		this.setAmount = setAmount;
 	}
 
 	@Override
 	public String toString() {
-		return "InvoiceDetail [invoiceDetailId=" + invoiceDetailId + ", item=" + item + ", price=" + price + ", amount="
-				+ amount + ", totalAmount=" + totalAmount + "]";
+		return "InvoiceDetail [item=" + item + ", price=" + price + ", quantity=" + quantity + ", setAmount="
+				+ setAmount + "]";
 	}
 
-	
+
+
 	
 
 }

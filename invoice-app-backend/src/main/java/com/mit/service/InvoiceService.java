@@ -1,7 +1,5 @@
 package com.mit.service;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -12,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.mit.dao.InvoiceRepo;
 import com.mit.dto.InvoiceDetailDto;
 import com.mit.dto.InvoiceDto;
+import com.mit.entity.Invoice;
 import com.mit.entity.InvoiceDetail;
 import com.mit.method.InvoiceInf;
 import com.mit.response.InvoiceResponse;
@@ -25,6 +24,9 @@ public class InvoiceService implements InvoiceInf {
 	
 	private final InvoiceRepo invoiceRepo;
 	private final InvoiceDetailService invoiceDetailService;
+	
+    private static final String OUTPUT_FORMAT_PATTERN = "dd/MM/yyyy";
+
 
 
 	@Override
@@ -117,12 +119,49 @@ public class InvoiceService implements InvoiceInf {
 	 
 	 public boolean isValidDateFormat(String dateStr) {
 	        try {
-	            LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+	            LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 	            return true;
 	        } catch (DateTimeParseException e) {
 	            return false;
 	        }
 	    }
-	
+	 
+	 public <T extends Enum<T>> boolean isValidEnum(Class<T> enumClass, String value) {
+		    for (T enumConstant : enumClass.getEnumConstants()) {
+		        if (enumConstant.name().equals(value)) {
+		            return true;
+		        }
+		    }
+		    return false;
+		}
+	 
+	  public String getInvoiceField(Invoice invoice, int index) {
+	        switch (index) {
+	            case 0:
+	                return invoice.invoiceId.toString();
+	            case 1:
+	                return invoice.casherName;
+	            case 2:
+	                return invoice.date.toString();
+	            case 3:
+	                return invoice.township.name();
+	            default:
+	                return "";
+	        }
+	    }
+	  
+	  private LocalDate parseDate(String dateString, int rowNumber) {
+		    if (dateString == null || dateString.trim().isEmpty()) {
+		        return null;
+		    }
+
+		    try {
+		        // Parse the original date string without changing its format
+		        DateTimeFormatter originalFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+		        return LocalDate.parse(dateString, originalFormatter);
+		    } catch (DateTimeParseException e) {
+		        return null;
+		    }
+		}
 
 }

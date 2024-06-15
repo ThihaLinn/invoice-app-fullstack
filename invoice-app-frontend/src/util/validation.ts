@@ -6,8 +6,8 @@ export const invoiceDetailSchema = z.object({
   id: z.number(),
   item: z.string().min(1, 'Item name is required.'),
   price: z.number().positive('Price must be greater 1.'),
-  amount: z.number().positive('Amount must be a positive number.'),
-  totalAmount: z.number().nonnegative('Total amount must be a non-negative number.'),
+  quantity: z.number().positive('Quantity must be a positive number.'),
+  setAmount: z.number().nonnegative('Set amount must be a non-negative number.'),
 });
 
 export const invoiceSchema = z.object({
@@ -29,6 +29,25 @@ export const changeDate = (dateString: string) => {
     return date;
   };
 
+  export function getFormattedDate() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0'); // Pad month for single-digit values
+    const day = String(today.getDate()).padStart(2, '0'); // Pad day for single-digit values
+  
+    // Choose your desired format:
+    // Option 1: YYYY-MM-DD (ISO 8601)
+    const formattedDate = `${year}-${month}-${day}`;
+  
+    // Option 2: MM/DD/YYYY (US format)
+    // const formattedDate = `${month}/${day}/${year}`;
+  
+    // Option 3: Custom format (e.g., DD-MMM-YYYY)
+    // const formattedDate = `${day}-${today.toLocaleString('default', { month: 'short' })}-${year}`;
+  
+    return formattedDate;
+  }
+
 
 
 
@@ -49,7 +68,7 @@ export const changeDate = (dateString: string) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based, so add 1
     const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return `${year}-${day}-${month}`;
   };
 
  export const generateExcel = async (invoices:any) => {
@@ -69,6 +88,8 @@ export const changeDate = (dateString: string) => {
       console.error('Error generating Excel:', error);
     }
   }
+
+
 
 export const numberWithCommas = (x: number): string => {
   if (x < 1000) return x.toString(); // No commas needed for numbers less than 1000
